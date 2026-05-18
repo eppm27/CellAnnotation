@@ -40,6 +40,7 @@ node_modules/
 
 # app data
 app_data/
+tiles/
 
 # App
 logs/

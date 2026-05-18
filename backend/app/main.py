@@ -1,18 +1,14 @@
 from pathlib import Path
 
-# zoom svs
-from fastapi.staticfiles import StaticFiles
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.responses import FileResponse, PlainTextResponse
 
 ##### Initialize logging #####
 import logging
 import logging.config
-import os
 from app.config import Config
 
 try:  # PyYAML is optional when running tests

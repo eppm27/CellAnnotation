@@ -51,17 +51,3 @@ def register(req: RegisterRequest, db: Session = Depends(db_utils.get_db)):
         data={"identity": user["name"], "role": user["role"], "email": user["email"]}
     )
     return {"user": user, "token": token}
-
-
-# def require_role(*roles):
-#    def wrapper(fn):
-#        from functools import wraps
-#        @wraps(fn)
-#        @jwt_required()
-#        def inner(*args, **kwargs):
-#            claims = get_jwt()
-#            if claims.get("role") not in roles:
-#                return {"msg":"forbidden"}, 403
-#            return fn(*args, **kwargs)
-#        return inner
-#    return wrapper

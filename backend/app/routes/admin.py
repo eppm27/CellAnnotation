@@ -7,14 +7,11 @@ from sqlalchemy.orm import Session
 import app.utils.db_utils as db_utils
 import app.services.user_service as user_service
 
-# from auth import require_role
-
 router = APIRouter(prefix="/api/admin")
 
 
 # list users
 @router.get("/users")
-# @require_role("admin")
 def list_users(db: Session = Depends(db_utils.get_db)):
     return user_service.list_users(db)
 
@@ -34,7 +31,6 @@ class UpdateUserRequest(BaseModel):
 
 # create users
 @router.post("/users")
-# @require_role("admin")
 def create_user(
     admin_user_req: AdminUserRequest, db: Session = Depends(db_utils.get_db)
 ):
@@ -51,7 +47,6 @@ def create_user(
 
 # update user roles
 @router.patch("/users/{uid}")
-# @require_role("admin")
 def update_user(
     uid: int, update_req: UpdateUserRequest, db: Session = Depends(db_utils.get_db)
 ):
@@ -60,6 +55,5 @@ def update_user(
 
 # delete users
 @router.delete("/users/{uid}")
-# @require_role("admin")
 def delete_user(uid: int, db: Session = Depends(db_utils.get_db)):
     return user_service.delete(uid, db)

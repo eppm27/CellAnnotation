@@ -2,22 +2,17 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse, Response
 from pathlib import Path
-import uuid, shutil
+import uuid, shutil, os
 from PIL import Image
 from io import BytesIO
-import json, os, zipfile, tempfile
+import json, zipfile, tempfile, subprocess
+from typing import Optional
 from app.utils.overlay import draw_annotations
 from app.models.annotation import ExportRequest
-
-# zoom svs
-from pathlib import Path
-import subprocess, os
-from typing import Optional
 
 TILES = Path("tiles")
 TILES.mkdir(parents=True, exist_ok=True)
 
-import shutil, os
 from shutil import which
 
 # Determine VIP binary at runtime. Prefer environment variable VIP_BIN, then look on PATH.
