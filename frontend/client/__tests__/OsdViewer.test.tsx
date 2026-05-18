@@ -99,7 +99,7 @@ describe("OsdViewer", () => {
     );
 
     expect(openSeadragonMock).toHaveBeenCalledWith(
-      expect.objectContaining({ tileSources: "http://127.0.0.1:5001/tiles/sample.dzi" }),
+      expect.objectContaining({ tileSources: "http://localhost:5001/tiles/sample.dzi" }),
     );
 
     act(() => {

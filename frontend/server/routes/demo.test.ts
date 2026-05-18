@@ -6,7 +6,7 @@ describe("handleDemo", () => {
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
 
-    handleDemo({} as any, { status } as any);
+    handleDemo({} as any, { status } as any, undefined as any);
 
     expect(status).toHaveBeenCalledWith(200);
     expect(json).toHaveBeenCalledWith({ message: "Hello from Express server" });

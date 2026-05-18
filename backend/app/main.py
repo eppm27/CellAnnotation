@@ -51,7 +51,8 @@ async def lifespan(app: FastAPI):
     # Create tables
     init_db()
     # Create default admin users
-    create_superuser()
+    if Config.ENABLE_DEV_SEED:
+        create_superuser()
     yield
 
 
@@ -61,18 +62,29 @@ app = FastAPI(lifespan=lifespan)
 os.makedirs("tiles", exist_ok=True)
 app.mount("/tiles", StaticFiles(directory="tiles"), name="tiles")
 
+
+def _parse_cors_origins() -> list[str]:
+    raw_origins = os.getenv("ANN_CORS_ORIGINS", "").strip()
+    if raw_origins:
+        return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+    if Config.APP_ENV == "production":
+        raise RuntimeError("ANN_CORS_ORIGINS must be set in production")
+
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5001",
+        "http://127.0.0.1:5001",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",  # Vite
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",  # CRA
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",  # Express
-        "http://localhost:5001",
-        "http://127.0.0.1:5001",  # Production
-    ],
+    allow_origins=_parse_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

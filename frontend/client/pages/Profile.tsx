@@ -1,8 +1,6 @@
 import Layout from "@/components/Layout";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { User2Icon, Shield } from "lucide-react";
 import {
   Card,
@@ -71,7 +69,6 @@ export default function Profile() {
                   <div>
                     <div>Email: {me.email}</div>
                     <div>Role: {me.role}</div>
-                    {/* Add form/buttons to update own email/password here */}
                   </div>
                 </CardContent>
               </Card>

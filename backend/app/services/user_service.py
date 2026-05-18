@@ -7,6 +7,7 @@ import app.utils.user_utils as user_utils
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import logging
+from app.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,10 @@ def create_superuser():
     """
     Create default admin user if not exists
     """
+    if not Config.ENABLE_DEV_SEED:
+        logger.info("Development seeding disabled; skipping demo user creation")
+        return
+
     db = SessionLocal()
 
     if not db.query(User).filter_by(email="admin@local.com").first():

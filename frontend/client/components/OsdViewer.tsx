@@ -1,5 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { useEffect, useRef } from "react";
+import { getBackendUrl } from "@/lib/apiBase";
 
 type Props = {
   dziUrl: string;
@@ -18,9 +19,6 @@ type Props = {
   }) => void;
 };
 
-// Update this to match your backend port
-const BACKEND_BASE = "http://127.0.0.1:5001";
-
 export default function OsdViewer({
   dziUrl,
   brightness = 100,
@@ -34,7 +32,7 @@ export default function OsdViewer({
   const viewerRef = useRef<OpenSeadragon.Viewer | null>(null);
 
   // Convert relative path /tiles/xxx.dzi to full backend URL
-  const src = /^\w+:\/\//.test(dziUrl) ? dziUrl : `${BACKEND_BASE}${dziUrl}`;
+  const src = getBackendUrl(dziUrl);
 
   useEffect(() => {
     if (!elRef.current) return;

@@ -1,6 +1,4 @@
-export const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  (import.meta.env.DEV ? "/api" : "http://127.0.0.1:5001/api");
+import { getApiUrl } from "./apiBase";
 
 export async function api<TResponse>(
   path: string,
@@ -19,7 +17,7 @@ export async function api<TResponse>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(getApiUrl(path), { ...options, headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status}`);

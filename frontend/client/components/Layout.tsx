@@ -9,13 +9,13 @@ import {
   type CalibrationSettings,
 } from "./CalibrationDialog";
 import { api } from "@/lib/api";
+import { getApiUrl, getBackendUrl } from "@/lib/apiBase";
 import type { ImageExportHandle } from "./ImageViewer";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useToast } from "@/components/ui/use-toast";
 
 const getCurrentImageId = () => localStorage.getItem("lastImageId") || "";
-const API_BASE = "http://localhost:5001/api";
 
 interface User {
   name: string;
@@ -174,23 +174,25 @@ export default function Layout({ children }: LayoutProps) {
             if (metadata.useHiRes && metadata.dziUrl) {
               // Restore SVS image
               setUseHiRes(true);
-              setDziUrl(metadata.dziUrl);
+              setDziUrl(getBackendUrl(metadata.dziUrl));
               setCurrentImage(undefined);
             } else {
               // Restore regular image
               setUseHiRes(false);
               setDziUrl(null);
               setCurrentImage(
-                metadata.thumbnailUrl || `/api/files/thumb/${lastId}`,
+                metadata.thumbnailUrl
+                  ? getApiUrl(metadata.thumbnailUrl)
+                  : getApiUrl(`/files/thumb/${lastId}`),
               );
             }
           } catch {
             // Fallback if metadata parsing fails
-            setCurrentImage(`/api/files/thumb/${lastId}`);
+            setCurrentImage(getApiUrl(`/files/thumb/${lastId}`));
           }
         } else {
           // Fallback if no metadata stored (legacy)
-          setCurrentImage(`/api/files/thumb/${lastId}`);
+          setCurrentImage(getApiUrl(`/files/thumb/${lastId}`));
         }
 
         const stored = localStorage.getItem(`annotations:${lastId}`);
@@ -363,7 +365,7 @@ const handleAnnotationImport = async (file: File) => {
 
     return new Promise<void>((resolve) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "http://localhost:5001/api/files/upload", true);
+      xhr.open("POST", getApiUrl("/files/upload"), true);
 
       xhr.onloadstart = () => {
         setUploading(true);
@@ -428,7 +430,7 @@ const handleAnnotationImport = async (file: File) => {
 
             if ((ext === "svs" || ext === ".svs") && dzi) {
               setUseHiRes(true);
-              setDziUrl(dzi);
+              setDziUrl(getBackendUrl(dzi));
               setCurrentImage(undefined);
               setUploadProgress(100);
               setUploading(false);
@@ -450,7 +452,7 @@ const handleAnnotationImport = async (file: File) => {
             // Non-SVS: use normal mode
             setUseHiRes(false);
             setDziUrl(null);
-            setCurrentImage(data.thumbnail_url);
+            setCurrentImage(getApiUrl(data.thumbnail_url));
             setUploadProgress(100);
 
             // Store non-SVS metadata
@@ -517,7 +519,7 @@ const handleAnnotationImport = async (file: File) => {
       return;
     }
     try {
-      const url = `${API_BASE}/files/original/${id}`;
+      const url = getApiUrl(`/files/original/${id}`);
       const res = await fetch(url, { method: "GET" });
       if (!res.ok) throw new Error(await res.text());
 

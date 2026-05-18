@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -18,8 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
 import PageSkeleton from "@/components/skeletons/PageSkeleton";
 
 interface User {
@@ -45,22 +44,9 @@ export default function UserManagement() {
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editingRole, setEditingRole] = useState("user");
 
-  // Reset Password modal state
-  const [showReset, setShowReset] = useState(false);
-  const [resetUserEmail, setResetUserEmail] = useState<string | null>(null);
-  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(
-    null,
-  );
-
   // Delete confirm modal state
   const [showDelete, setShowDelete] = useState(false);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
-
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const authHeader: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
 
   // Fetch current user info
   useEffect(() => {
@@ -129,29 +115,6 @@ export default function UserManagement() {
     }
   };
 
-  const openResetModal = (user: User) => {
-    setResetUserEmail(user.email);
-    setTemporaryPassword(null);
-    setShowReset(true);
-  };
-
-  const resetPassword = async () => {
-    if (!resetUserEmail) return;
-    try {
-      const res = await fetch(`/api/admin/users/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({ email: resetUserEmail, temporary: true }),
-      });
-      if (!res.ok) throw new Error(`Failed to reset password (${res.status})`);
-      const data = await res.json();
-      // Expecting API to return { tempPassword: string }
-      setTemporaryPassword(data.tempPassword || "(Check email)");
-    } catch (e: any) {
-      alert(e.message || "Reset failed");
-    }
-  };
-
   const createUser = async () => {
     try {
       const created = await api<User>(`/admin/users`, {
@@ -174,29 +137,22 @@ export default function UserManagement() {
 
   if (loading) return <PageSkeleton />;
 
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    api<User[]>("/admin/users")
+      .then(setUsers)
+      .catch((e) => setError(e.message || "Failed to load users"))
+      .finally(() => setLoading(false));
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div>
         {error && (
-          <div className="text-red-600 mb-2">
-            <p>{error}</p>
-            <Button
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-                fetch("/api/admin/users", { headers: { ...authHeader } })
-                  .then((res) => {
-                    if (!res.ok)
-                      throw new Error(`Failed to fetch users (${res.status})`);
-                    return res.json();
-                  })
-                  .then((data) => setUsers(data))
-                  .catch((e) => setError(e.message || "Failed to load users"))
-                  .finally(() => setLoading(false));
-              }}
-            >
-              Retry
-            </Button>
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-destructive">
+            <p className="mb-3 text-sm">{error}</p>
+            <Button onClick={handleRetry}>Retry</Button>
           </div>
         )}
         <div className="flex items-center justify-between mb-4">
@@ -212,28 +168,36 @@ export default function UserManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="border px-2 py-1">{user.id}</TableCell>
-                <TableCell className="border px-2 py-1">{user.email}</TableCell>
-                <TableCell className="border px-2 py-1">{user.role}</TableCell>
-                <TableCell className="border px-2 py-1 space-x-2">
-                  <Button size="sm" onClick={() => openRoleModal(user)}>
-                    Edit Role
-                  </Button>
-                  <Button size="sm" onClick={() => openResetModal(user)}>
-                    Reset Password
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(user)}
-                  >
-                    Delete
-                  </Button>
+            {users.length ? (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="border px-2 py-1">{user.id}</TableCell>
+                  <TableCell className="border px-2 py-1">{user.email}</TableCell>
+                  <TableCell className="border px-2 py-1">{user.role}</TableCell>
+                  <TableCell className="border px-2 py-1 space-x-2">
+                    <Button size="sm" onClick={() => openRoleModal(user)}>
+                      Edit Role
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(user)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="px-4 py-10 text-center text-sm text-muted-foreground"
+                >
+                  No users to display yet.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
 
@@ -310,34 +274,6 @@ export default function UserManagement() {
                 Cancel
               </Button>
               <Button onClick={saveRole}>Save</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reset Password Dialog */}
-        <Dialog open={showReset} onOpenChange={setShowReset}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reset Password</DialogTitle>
-              <DialogDescription>
-                Send a temporary password to {resetUserEmail}.
-              </DialogDescription>
-            </DialogHeader>
-            {temporaryPassword && (
-              <Alert>
-                <AlertDescription>
-                  Temporary password:{" "}
-                  <span className="font-mono">{temporaryPassword}</span>
-                </AlertDescription>
-              </Alert>
-            )}
-            <DialogFooter>
-              <Button variant="secondary" onClick={() => setShowReset(false)}>
-                Close
-              </Button>
-              {!temporaryPassword && (
-                <Button onClick={resetPassword}>Send</Button>
-              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

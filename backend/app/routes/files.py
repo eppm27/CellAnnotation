@@ -13,7 +13,7 @@ from app.models.annotation import ExportRequest
 TILES = Path("tiles")
 TILES.mkdir(parents=True, exist_ok=True)
 
-from shutil import which
+from shutil import copyfileobj, which
 
 # Determine VIP binary at runtime. Prefer environment variable VIP_BIN, then look on PATH.
 # On Windows the binary may be 'vips.exe', on Unix it's usually 'vips'.
@@ -71,7 +71,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
     # dest = DATA / file.filename
     dest = DATA / f"{img_id}{ext}"# Use unique ID as filename
     with open(dest, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+        copyfileobj(file.file, f)
 
     
     thumb = THUMBS / f"{img_id}.jpg"

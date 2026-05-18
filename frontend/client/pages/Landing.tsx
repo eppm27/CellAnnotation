@@ -33,25 +33,6 @@ export default function Landing() {
               </p>
             </div>
           </div>
-          {/* <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setInitialTab("login");
-                setOpen(true);
-              }}
-            >
-              Sign In
-            </Button>
-            <Button
-              onClick={() => {
-                setInitialTab("register");
-                setOpen(true);
-              }}
-            >
-              Create Account
-            </Button>
-          </div> */}
         </div>
       </header>
 

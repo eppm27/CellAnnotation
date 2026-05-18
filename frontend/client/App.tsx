@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import PageSkeleton from "@/components/skeletons/PageSkeleton";
 import WorkspaceSkeleton from "@/components/skeletons/WorkspaceSkeleton";
+import { RequireAdmin } from "./components/auth/RequireAdmin";
 
 const Index = lazy(() => import("./pages/Index"));
 const Landing = lazy(() => import("./pages/Landing"));
@@ -45,9 +46,11 @@ const App = () => (
           <Route
             path="/settings"
             element={
-              <Suspense fallback={<WorkspaceSkeleton />}>
-                <Settings />
-              </Suspense>
+              <RequireAdmin>
+                <Suspense fallback={<WorkspaceSkeleton />}>
+                  <Settings />
+                </Suspense>
+              </RequireAdmin>
             }
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

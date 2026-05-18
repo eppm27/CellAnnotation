@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileImage, User, LogOut } from "lucide-react";
+import { CircleHelp, User, LogOut } from "lucide-react";
 import { RequireAdmin } from "./auth/RequireAdmin";
 
 interface HeaderProps {
@@ -19,9 +19,15 @@ interface HeaderProps {
   };
   onLogin: () => void;
   onLogout: () => void;
+  onHelpClick?: () => void;
 }
 
-export default function Header({ user, onLogin, onLogout }: HeaderProps) {
+export default function Header({
+  user,
+  onLogin,
+  onLogout,
+  onHelpClick,
+}: HeaderProps) {
   return (
     <header className="w-full bg-card/95 backdrop-blur border-b border-border">
       <div className="px-6 py-4 flex items-center justify-between">
@@ -51,6 +57,12 @@ export default function Header({ user, onLogin, onLogout }: HeaderProps) {
 
         {/* User Section */}
         <div className="flex items-center space-x-3">
+          {onHelpClick && (
+            <Button variant="ghost" size="sm" onClick={onHelpClick}>
+              <CircleHelp className="mr-2 h-4 w-4" />
+              Help
+            </Button>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -6,13 +6,22 @@ from sqlalchemy.orm import Session
 
 import app.utils.db_utils as db_utils
 import app.services.user_service as user_service
+from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/api/admin")
 
 
+def _require_admin(current_user=Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
 # list users
 @router.get("/users")
-def list_users(db: Session = Depends(db_utils.get_db)):
+def list_users(
+    _: dict = Depends(_require_admin), db: Session = Depends(db_utils.get_db)
+):
     return user_service.list_users(db)
 
 
@@ -32,7 +41,9 @@ class UpdateUserRequest(BaseModel):
 # create users
 @router.post("/users")
 def create_user(
-    admin_user_req: AdminUserRequest, db: Session = Depends(db_utils.get_db)
+    admin_user_req: AdminUserRequest,
+    _: dict = Depends(_require_admin),
+    db: Session = Depends(db_utils.get_db),
 ):
     email = admin_user_req.email.strip().lower()
     role = admin_user_req.role.strip().lower()
@@ -48,12 +59,17 @@ def create_user(
 # update user roles
 @router.patch("/users/{uid}")
 def update_user(
-    uid: int, update_req: UpdateUserRequest, db: Session = Depends(db_utils.get_db)
+    uid: int,
+    update_req: UpdateUserRequest,
+    _: dict = Depends(_require_admin),
+    db: Session = Depends(db_utils.get_db),
 ):
     return user_service.update(uid, db, update_req.role, update_req.password)
 
 
 # delete users
 @router.delete("/users/{uid}")
-def delete_user(uid: int, db: Session = Depends(db_utils.get_db)):
+def delete_user(
+    uid: int, _: dict = Depends(_require_admin), db: Session = Depends(db_utils.get_db)
+):
     return user_service.delete(uid, db)
