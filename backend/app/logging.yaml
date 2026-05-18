@@ -1,0 +1,38 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  default:
+    format: "%(levelname)s:     %(asctime)s [%(name)s] %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: default
+    level: INFO
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: default
+    filename: logs/app.log
+    maxBytes: 25600000 # 25MB 
+    backupCount: 5
+    encoding: utf-8
+
+root:
+  level: INFO
+  handlers: [console, file]
+
+loggers:
+  uvicorn:
+    level: INFO
+    handlers: [console, file]
+    propagate: no
+  uvicorn.access:
+    level: INFO
+    handlers: [console, file]
+    propagate: no
+  uvicorn.error:
+    level: ERROR
+    handlers: [console, file]
+    propagate: no

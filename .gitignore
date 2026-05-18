@@ -1,0 +1,83 @@
+Week1/.DS_Store
+# Python virtual environment
+venv/
+.venv
+env/
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# macOS-specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# macOS folder attributes
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+
+# VS Code
+.vscode/
+
+# Swap files / temp
+*.swp
+*.swo
+
+# Node modules
+node_modules/
+
+# Coverage reports
+.coverage
+
+# app data
+app_data/
+
+# App
+logs/
+*.tar.gz
+*.zip
+*ann-standalone*
+
+
+# Tiles and uploaded files (don't commit to git)
+frontend/public/tiles/
+backend/tiles/
+backend/app_data/images/
+backend/app_data/thumbs/
+backend/app_data/originals/
+backend/app_data/*.db
+backend/app_data/*.sqlite3
+backend/app_data/*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.next/
