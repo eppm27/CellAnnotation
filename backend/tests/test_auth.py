@@ -171,7 +171,11 @@ def test_register_with_whitespace_email(client):
     """Test that register properly handles emails with whitespace"""
     res = client.post(
         "/api/auth/register",
-        json={"name": "Test User", "email": "  test@example.com  ", "password": "Pass123!"},
+        json={
+            "name": "Test User",
+            "email": "  test@example.com  ",
+            "password": "Pass123!",
+        },
     )
     assert res.status_code == 200
     body = res.json()

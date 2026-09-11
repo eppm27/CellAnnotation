@@ -19,6 +19,7 @@ def client(tmp_path):
     """
     prev_cwd = os.getcwd()
     os.environ["APP_DATA_DIR"] = str(tmp_path / "data")
+    os.environ["ANN_ENABLE_DEV_SEED"] = "true"
     os.chdir(tmp_path)
     from app.main import app  # import after env + cwd set
 
@@ -86,6 +87,7 @@ def db_session(tmp_path):
     """
     prev_cwd = os.getcwd()
     os.environ["APP_DATA_DIR"] = str(tmp_path / "data")
+    os.environ["ANN_ENABLE_DEV_SEED"] = "true"
     os.chdir(tmp_path)
     from app.utils.db_utils import SessionLocal, init_db
     

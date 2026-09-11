@@ -7,10 +7,11 @@ from PIL import Image
 from io import BytesIO
 import json, zipfile, tempfile, subprocess
 from typing import Optional
+from app.config import Config
 from app.utils.overlay import draw_annotations
 from app.models.annotation import ExportRequest
 
-TILES = Path("tiles")
+TILES = Config.TILES_DIR
 TILES.mkdir(parents=True, exist_ok=True)
 
 from shutil import copyfileobj, which
@@ -34,15 +35,15 @@ def _ensure_vips_available_or_raise():
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
-DATA = Path("app_data/images")
+DATA = Config.APP_DATA_DIR / "images"
 DATA.mkdir(parents=True, exist_ok=True)
-THUMBS = Path("app_data/thumbs")
+THUMBS = Config.APP_DATA_DIR / "thumbs"
 THUMBS.mkdir(parents=True, exist_ok=True)
-ORIGINALS = Path("app_data/originals")
+ORIGINALS = Config.APP_DATA_DIR / "originals"
 ORIGINALS.mkdir(parents=True, exist_ok=True)
-ORIGINALS_DIR = "app_data/originals"
-IMAGES_DIR = "app_data/images"
-THUMBS_DIR = "app_data/thumbs"
+ORIGINALS_DIR = str(ORIGINALS)
+IMAGES_DIR = str(DATA)
+THUMBS_DIR = str(THUMBS)
 ALLOWED = {".png", ".svs", ".jpg", ".jpeg", ".tif", ".tiff"}  # allowed file extensions
 
 
@@ -54,8 +55,6 @@ async def upload(request: Request, file: UploadFile = File(...)):
       - SVS: generate DeepZoom tiles, return dzi_url (for frontend OSD usage)
     """
     # Prepare directories
-    DATA = Path("app_data/images")
-    THUMBS = Path("app_data/thumbs")
     DATA.mkdir(parents=True, exist_ok=True)
     THUMBS.mkdir(parents=True, exist_ok=True)
 
@@ -69,11 +68,10 @@ async def upload(request: Request, file: UploadFile = File(...)):
     # Save original file to DATA
     img_id = uuid.uuid4().hex
     # dest = DATA / file.filename
-    dest = DATA / f"{img_id}{ext}"# Use unique ID as filename
+    dest = DATA / f"{img_id}{ext}"  # Use unique ID as filename
     with open(dest, "wb") as f:
         copyfileobj(file.file, f)
 
-    
     thumb = THUMBS / f"{img_id}.jpg"
 
     # Key: dzi_url is initially None; only set to '/tiles/<id>.dzi' after successful SVS tiling
@@ -133,17 +131,16 @@ async def upload(request: Request, file: UploadFile = File(...)):
             # and the frontend can use the thumbnail for lightweight usage.
             dzi_url = None
     elif ext == ".png":
-    # ✅ PNG: 生成 PNG 缩略图，保留透明
         try:
             im = Image.open(dest)
             try:
                 im.thumbnail((4096, 4096), Image.Resampling.LANCZOS)
             except AttributeError:
                 im.thumbnail((4096, 4096), Image.LANCZOS)
-            thumb = THUMBS / f"{img_id}.png"
-            im.save(thumb, "PNG")
+            thumb = THUMBS / f"{img_id}.jpg"
+            im.convert("RGB").save(thumb, "JPEG", quality=85)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"PNG thumbnail failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Thumbnail failed: {e}")
 
     else:
         # ✅ 其它（.jpg/.jpeg/.tif/.tiff）：生成 JPEG 缩略图
@@ -180,12 +177,18 @@ def thumb(img_id: str):
     raise HTTPException(404, "thumbnail not found")
 
 
-
 def _find_original_by_id(img_id: str) -> Path:
     matches = list(DATA.glob(f"{img_id}.*"))
     if not matches:
         raise HTTPException(status_code=404, detail="File not found")
     return matches[0]
+
+
+def _first_existing_path(paths: list[Path]) -> Path | None:
+    for path in paths:
+        if path.exists():
+            return path
+    return None
 
 
 @router.get("/original/{img_id}")
@@ -202,14 +205,26 @@ def download_original(img_id: str):
 def export(req: ExportRequest):
     # 1) load base image
     if req.file_type == "png":
-        img_path = os.path.join(IMAGES_DIR, f"{req.file_id}.png")
-        if not os.path.exists(img_path):
+        img_path = _first_existing_path(
+            [
+                DATA / f"{req.file_id}.png",
+                Path("app_data/images") / f"{req.file_id}.png",
+            ]
+        )
+        if not img_path:
             raise HTTPException(404, "PNG image not found")
         base = Image.open(img_path).convert("RGBA")
     elif req.file_type == "svs":
         # only load the thumbnail
-        thumb_path = os.path.join(THUMBS_DIR, f"{req.file_id}.png")
-        if not os.path.exists(thumb_path):
+        thumb_path = _first_existing_path(
+            [
+                THUMBS / f"{req.file_id}.png",
+                THUMBS / f"{req.file_id}.jpg",
+                Path("app_data/thumbs") / f"{req.file_id}.png",
+                Path("app_data/thumbs") / f"{req.file_id}.jpg",
+            ]
+        )
+        if not thumb_path:
             raise HTTPException(404, "SVS thumbnail not found")
         base = Image.open(thumb_path).convert("RGBA")
     else:
@@ -330,7 +345,10 @@ def extract_patch(
 
         # Validate level
         if level < 0 or level >= slide.level_count:
-            raise HTTPException(400, f"Invalid level {level}. Available levels: 0-{slide.level_count - 1}")
+            raise HTTPException(
+                400,
+                f"Invalid level {level}. Available levels: 0-{slide.level_count - 1}",
+            )
 
         # Get dimensions at the target level
         level_dims = slide.level_dimensions[level]
@@ -338,7 +356,9 @@ def extract_patch(
         # Validate coordinates at level 0
         level0_dims = slide.level_dimensions[0]
         if x < 0 or y < 0 or x >= level0_dims[0] or y >= level0_dims[1]:
-            raise HTTPException(400, f"Coordinates out of bounds. Image size: {level0_dims}")
+            raise HTTPException(
+                400, f"Coordinates out of bounds. Image size: {level0_dims}"
+            )
 
         # Calculate downsample factor
         downsample = slide.level_downsamples[level]
@@ -385,22 +405,20 @@ def extract_patch(
         if actual_width > MAX_DIMENSION or actual_height > MAX_DIMENSION:
             raise HTTPException(
                 400,
-                f"Selection too large even at lowest resolution. Please select a smaller region."
+                f"Selection too large even at lowest resolution. Please select a smaller region.",
             )
 
         estimated_bytes = actual_width * actual_height * 3
         if estimated_bytes > MAX_BYTES:
             raise HTTPException(
                 400,
-                f"Selection too large even at lowest resolution. Please select a smaller region."
+                f"Selection too large even at lowest resolution. Please select a smaller region.",
             )
 
         # Extract region - OpenSlide handles coordinate transformation
         # location is always in level 0 coordinates, size is in target level coordinates
         region = slide.read_region(
-            location=(x, y),
-            level=level,
-            size=(actual_width, actual_height)
+            location=(x, y), level=level, size=(actual_width, actual_height)
         )
 
         # Convert to RGB (read_region returns RGBA)
