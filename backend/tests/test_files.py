@@ -17,7 +17,9 @@ def make_png_bytes(size=(8, 8), color=(255, 0, 0)):
 
 
 def write_png_image(file_id, size=(16, 16)):
-    images = Path("app_data/images")
+    from app.config import Config
+
+    images = Config.APP_DATA_DIR / "images"
     images.mkdir(parents=True, exist_ok=True)
     img = Image.new("RGBA", size, (128, 64, 32, 255))
     img.save(images / f"{file_id}.png")
@@ -81,42 +83,44 @@ def test_thumb_not_found(client):
 def test_upload_generates_unique_uuid(client):
     """TC-019: Verify images are stored with unique UUID identifiers"""
     import re
-    
+
     # UUID pattern (with or without hyphens)
     uuid_pattern = re.compile(
-        r'^[0-9a-f]{32}$',  # 32 hex characters (UUID without hyphens)
-        re.IGNORECASE
+        r"^[0-9a-f]{32}$", re.IGNORECASE  # 32 hex characters (UUID without hyphens)
     )
-    
+
     # Upload first image
     png1 = make_png_bytes(size=(10, 10), color=(255, 0, 0))
     data1 = {"file": ("image1.png", png1, "image/png")}
     res1 = client.post("/api/files/upload", files=data1)
     assert res1.status_code == 200
     id1 = res1.json()["id"]
-    
+
     # Upload second image
     png2 = make_png_bytes(size=(10, 10), color=(0, 255, 0))
     data2 = {"file": ("image2.png", png2, "image/png")}
     res2 = client.post("/api/files/upload", files=data2)
     assert res2.status_code == 200
     id2 = res2.json()["id"]
-    
+
     # Verify both IDs are valid UUIDs (32 hex characters)
     assert uuid_pattern.match(id1), f"ID {id1} is not a valid UUID format"
     assert uuid_pattern.match(id2), f"ID {id2} is not a valid UUID format"
-    
+
     # Verify IDs are unique
     assert id1 != id2, "Image IDs should be unique"
-    
+
     # Verify images are stored with UUID-based filenames
-    images_dir = Path("app_data/images")
+    from app.config import Config
+
+    images_dir = Config.APP_DATA_DIR / "images"
     assert (images_dir / f"{id1}.png").exists(), f"Image {id1}.png not found in storage"
     assert (images_dir / f"{id2}.png").exists(), f"Image {id2}.png not found in storage"
 
 
 def test_upload_svs_thumbnail_success(client, monkeypatch, tmp_path):
     """TC-015: Verify SVS file import"""
+
     # Build a fake openslide module that returns an image region
     class FakeSlide:
         level_count = 3
@@ -246,7 +250,9 @@ def test_export_png_all_mode(client):
 
 def test_export_svs_all_mode_uses_thumbnail(client):
     file_id = "exp_svs_all"
-    thumbs = Path("app_data/thumbs")
+    from app.config import Config
+
+    thumbs = Config.APP_DATA_DIR / "thumbs"
     thumbs.mkdir(parents=True, exist_ok=True)
     img = Image.new("RGBA", (10, 12), (0, 0, 255, 255))
     img.save(thumbs / f"{file_id}.png")
@@ -329,7 +335,7 @@ def test_download_original_png(client):
     assert res.status_code == 200
     payload = res.json()
     img_id = payload["id"]
-    
+
     # Download the original
     res = client.get(f"/api/files/original/{img_id}")
     assert res.status_code == 200
@@ -346,6 +352,7 @@ def test_download_original_not_found(client):
 
 def test_upload_svs_vips_failure(client, monkeypatch):
     """Test SVS upload when vips dzsave fails"""
+
     # Mock openslide to succeed
     class FakeSlide:
         level_count = 3
@@ -366,15 +373,15 @@ def test_upload_svs_vips_failure(client, monkeypatch):
 
     # Mock subprocess.run to fail
     import subprocess
-    
+
     def mock_run(*args, **kwargs):
         error = subprocess.CalledProcessError(
             returncode=1,
             cmd=args[0] if args else [],
-            stderr="VipsForeignLoad: test.svs is not a known file format"
+            stderr="VipsForeignLoad: test.svs is not a known file format",
         )
         raise error
-    
+
     monkeypatch.setattr(subprocess, "run", mock_run)
 
     data = {"file": ("test.svs", BytesIO(b"fake"), "application/octet-stream")}
@@ -385,6 +392,7 @@ def test_upload_svs_vips_failure(client, monkeypatch):
 
 def test_upload_svs_no_vips_available(client, monkeypatch):
     """Test SVS upload when vips is not available"""
+
     # Mock openslide to succeed
     class FakeSlide:
         level_count = 3
@@ -405,14 +413,15 @@ def test_upload_svs_no_vips_available(client, monkeypatch):
 
     # Mock os.path.exists to return False for vips
     import os
+
     original_exists = os.path.exists
-    
+
     def mock_exists(path):
         # Only return False for vips binary checks
         if path and ("vips" in str(path).lower()):
             return False
         return original_exists(path)
-    
+
     monkeypatch.setattr(os.path, "exists", mock_exists)
     monkeypatch.setenv("VIP_BIN", "")
 
@@ -435,6 +444,7 @@ def test_upload_non_svs_thumbnail_failure(client):
 
 def test_patch_extraction_svs(client, monkeypatch):
     """TC-043: Verify SVS patch extraction at high resolution"""
+
     # First upload an SVS file
     class FakeSlide:
         level_count = 3
@@ -457,12 +467,12 @@ def test_patch_extraction_svs(client, monkeypatch):
     # Mock subprocess for upload
     import subprocess
     from unittest.mock import Mock
-    
+
     mock_result = Mock()
     mock_result.returncode = 0
     mock_result.stdout = ""
     mock_result.stderr = ""
-    
+
     def mock_run(*args, **kwargs):
         if len(args) > 0 and len(args[0]) > 1 and args[0][1] == "dzsave":
             out_base = args[0][3]
@@ -470,7 +480,7 @@ def test_patch_extraction_svs(client, monkeypatch):
             dzi_path.parent.mkdir(parents=True, exist_ok=True)
             dzi_path.write_text('<?xml version="1.0" encoding="UTF-8"?><Image/>')
         return mock_result
-    
+
     monkeypatch.setattr(subprocess, "run", mock_run)
 
     # Upload SVS
@@ -503,6 +513,7 @@ def test_patch_extraction_non_svs(client):
 
 def test_patch_extraction_invalid_level(client, monkeypatch):
     """TC-042: Verify patch download - Invalid level handling"""
+
     # Upload SVS
     class FakeSlide:
         level_count = 3
@@ -524,10 +535,10 @@ def test_patch_extraction_invalid_level(client, monkeypatch):
 
     import subprocess
     from unittest.mock import Mock
-    
+
     mock_result = Mock()
     mock_result.returncode = 0
-    
+
     def mock_run(*args, **kwargs):
         if len(args) > 0 and len(args[0]) > 1 and args[0][1] == "dzsave":
             out_base = args[0][3]
@@ -535,7 +546,7 @@ def test_patch_extraction_invalid_level(client, monkeypatch):
             dzi_path.parent.mkdir(parents=True, exist_ok=True)
             dzi_path.write_text('<?xml version="1.0" encoding="UTF-8"?><Image/>')
         return mock_result
-    
+
     monkeypatch.setattr(subprocess, "run", mock_run)
 
     data = {"file": ("test.svs", BytesIO(b"fake"), "application/octet-stream")}
@@ -551,6 +562,7 @@ def test_patch_extraction_invalid_level(client, monkeypatch):
 
 def test_patch_extraction_out_of_bounds(client, monkeypatch):
     """Test patch extraction with coordinates out of bounds"""
+
     # Upload SVS
     class FakeSlide:
         level_count = 3
@@ -572,10 +584,10 @@ def test_patch_extraction_out_of_bounds(client, monkeypatch):
 
     import subprocess
     from unittest.mock import Mock
-    
+
     mock_result = Mock()
     mock_result.returncode = 0
-    
+
     def mock_run(*args, **kwargs):
         if len(args) > 0 and len(args[0]) > 1 and args[0][1] == "dzsave":
             out_base = args[0][3]
@@ -583,7 +595,7 @@ def test_patch_extraction_out_of_bounds(client, monkeypatch):
             dzi_path.parent.mkdir(parents=True, exist_ok=True)
             dzi_path.write_text('<?xml version="1.0" encoding="UTF-8"?><Image/>')
         return mock_result
-    
+
     monkeypatch.setattr(subprocess, "run", mock_run)
 
     data = {"file": ("test.svs", BytesIO(b"fake"), "application/octet-stream")}
@@ -592,13 +604,16 @@ def test_patch_extraction_out_of_bounds(client, monkeypatch):
     img_id = res.json()["id"]
 
     # Try with out of bounds coordinates (currently returns 500 instead of 400 due to exception handling)
-    res = client.get(f"/api/files/patch/{img_id}?x=10000&y=10000&width=512&height=512&level=0")
+    res = client.get(
+        f"/api/files/patch/{img_id}?x=10000&y=10000&width=512&height=512&level=0"
+    )
     assert res.status_code == 500
     assert "Patch extraction failed" in res.text
 
 
 def test_patch_extraction_with_brightness_contrast(client, monkeypatch):
     """Test patch extraction with brightness and contrast adjustments"""
+
     class FakeSlide:
         level_count = 3
         level_dimensions = [(4096, 4096), (2048, 2048), (1024, 1024)]
@@ -619,10 +634,10 @@ def test_patch_extraction_with_brightness_contrast(client, monkeypatch):
 
     import subprocess
     from unittest.mock import Mock
-    
+
     mock_result = Mock()
     mock_result.returncode = 0
-    
+
     def mock_run(*args, **kwargs):
         if len(args) > 0 and len(args[0]) > 1 and args[0][1] == "dzsave":
             out_base = args[0][3]
@@ -630,7 +645,7 @@ def test_patch_extraction_with_brightness_contrast(client, monkeypatch):
             dzi_path.parent.mkdir(parents=True, exist_ok=True)
             dzi_path.write_text('<?xml version="1.0" encoding="UTF-8"?><Image/>')
         return mock_result
-    
+
     monkeypatch.setattr(subprocess, "run", mock_run)
 
     data = {"file": ("test.svs", BytesIO(b"fake"), "application/octet-stream")}

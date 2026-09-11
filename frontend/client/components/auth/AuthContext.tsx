@@ -16,6 +16,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   login: (credentials: { email: string; password: string }) => Promise<void>;
+  registerWithToken: (token: string) => void;
   logout: () => void;
 };
 
@@ -34,6 +35,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem("token") || undefined,
   );
   const [role, setRole] = useState(localStorage.getItem("role") || undefined);
+
+  const applyToken = (accessToken: string) => {
+    const decoded = jwtDecode<JwtPayload>(accessToken);
+    if (!decoded.email || !decoded.role) {
+      throw new Error("Invalid authentication token");
+    }
+
+    localStorage.setItem("token", accessToken);
+    localStorage.setItem("role", decoded.role);
+    setUser({ email: decoded.email, role: decoded.role });
+    setToken(accessToken);
+    setRole(decoded.role);
+  };
 
   // Fetch user when app starts (if token exists)
   useEffect(() => {
@@ -65,16 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
 
-    const decoded = jwtDecode<JwtPayload>(access_token);
+    applyToken(access_token);
+  };
 
-    // Save to localStorage
-    localStorage.setItem("token", access_token);
-    localStorage.setItem("role", decoded.role);
-
-    // Update context state
-    setUser({ email: decoded.email, role: decoded.role });
-    setToken(access_token);
-    setRole(decoded.role);
+  const registerWithToken = (accessToken: string) => {
+    applyToken(accessToken);
   };
 
   const logout = () => {
@@ -84,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, registerWithToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

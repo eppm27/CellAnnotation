@@ -48,7 +48,7 @@ export default function AuthDialog({
   onLogin,
   initialTab = "login",
 }: AuthDialogProps) {
-  const { user, login } = useAuth();
+  const { login, registerWithToken } = useAuth();
   const [tab, setTab] = useState<"login" | "register">(initialTab);
   // Sync tab when dialog opens or initialTab changes
   useEffect(() => {
@@ -103,8 +103,8 @@ export default function AuthDialog({
         return;
       }
 
-      if (registerForm.password.length < 6) {
-        setError("Password must be at least 6 characters");
+      if (registerForm.password.length < 8) {
+        setError("Password must be at least 8 characters");
         return;
       }
       // Real registration against backend
@@ -119,6 +119,7 @@ export default function AuthDialog({
           password: registerForm.password,
         }),
       });
+      registerWithToken(result.token);
       onLogin({
         name: result.user.name,
         email: result.user.email,

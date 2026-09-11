@@ -1,5 +1,4 @@
-const configuredBase =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE;
+const configuredBase = import.meta.env.VITE_API_BASE_URL;
 
 function normalizeOrigin(value: string) {
   return value.replace(/\/api\/?$/, "").replace(/\/+$/, "");
@@ -17,7 +16,7 @@ function resolveApiOrigin() {
   }
 
   throw new Error(
-    "VITE_API_BASE_URL (or VITE_API_BASE) must be set for production builds.",
+    "VITE_API_BASE_URL must be set for production builds.",
   );
 }
 

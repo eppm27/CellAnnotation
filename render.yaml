@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: cell-annotation-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: starter
+    healthCheckPath: /api/health/health
+    disk:
+      name: cell-annotation-data
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: ANN_ENV
+        value: production
+      - key: ANN_APP_DATA_DIR
+        value: /var/data/app_data
+      - key: ANN_LOGS_DIR
+        value: /var/data/logs
+      - key: ANN_ENABLE_DEV_SEED
+        value: "false"
+      - key: VIP_BIN
+        value: /usr/bin/vips
+      - key: ANN_SECRET_KEY
+        generateValue: true
+      - key: ANN_JWT_SECRET_KEY
+        generateValue: true
+      - key: ANN_CORS_ORIGINS
+        sync: false

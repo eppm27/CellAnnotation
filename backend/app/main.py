@@ -59,8 +59,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # zoom svs
-os.makedirs("tiles", exist_ok=True)
-app.mount("/tiles", StaticFiles(directory="tiles"), name="tiles")
+Config.TILES_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/tiles", StaticFiles(directory=Config.TILES_DIR), name="tiles")
 
 
 def _parse_cors_origins() -> list[str]:
@@ -81,6 +81,7 @@ def _parse_cors_origins() -> list[str]:
         "http://localhost:5001",
         "http://127.0.0.1:5001",
     ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -120,6 +121,8 @@ async def serve_spa():
 @app.get("/favicon.png", include_in_schema=False)
 async def favicon():
     icon_file = FRONTEND_BUILD / "favicon.png"
+    if not icon_file.exists():
+        icon_file = FRONTEND_BUILD / "favicon.ico"
     if not icon_file.exists():
         logger.warning("Frontend favicon missing at %s", icon_file)
         return PlainTextResponse("favicon not found", status_code=404)
