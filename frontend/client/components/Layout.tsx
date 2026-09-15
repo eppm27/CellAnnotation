@@ -14,6 +14,14 @@ import type { ImageExportHandle } from "./ImageViewer";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  DEMO_ANNOTATIONS,
+  DEMO_IMAGE_ID,
+  DEMO_IMAGE_URL,
+  DEMO_LAYERS,
+  DEMO_QUERY_VALUE,
+  isDemoImageId,
+} from "@/lib/demoSample";
 
 const getCurrentImageId = () => localStorage.getItem("lastImageId") || "";
 
@@ -76,6 +84,7 @@ export default function Layout({ children }: LayoutProps) {
   const [userView, setUserView] = useState<User | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // For tracking color and category for new annotation creation
   const [annotationColor, setAnnotationColor] = useState(DEFAULT_COLOR);
@@ -148,6 +157,45 @@ export default function Layout({ children }: LayoutProps) {
     URL.revokeObjectURL(url);
   };
 
+  const loadDemoWorkspace = () => {
+    const annotations = cloneAnnotations(DEMO_ANNOTATIONS);
+    setCurrentImageId(DEMO_IMAGE_ID);
+    setCurrentImage(DEMO_IMAGE_URL);
+    setUseHiRes(false);
+    setDziUrl(null);
+    setAnnotations(annotations);
+    setLayers(DEMO_LAYERS);
+    setBaseImageLayerId(DEMO_LAYERS[0].id);
+    setSelectedLayerId(DEMO_LAYERS[1].id);
+    setSelectedAnnotationId(null);
+    setSelectedTool("select");
+    setUndoStack([]);
+    setRedoStack([]);
+    setIsDemoMode(true);
+
+    localStorage.setItem("lastImageId", DEMO_IMAGE_ID);
+    localStorage.setItem(
+      `imageMetadata:${DEMO_IMAGE_ID}`,
+      JSON.stringify({
+        useHiRes: false,
+        dziUrl: null,
+        isSVS: false,
+        thumbnailUrl: DEMO_IMAGE_URL,
+        demo: true,
+      }),
+    );
+    localStorage.setItem(
+      `annotations:${DEMO_IMAGE_ID}`,
+      JSON.stringify(annotations),
+    );
+    localStorage.setItem(`layers:${DEMO_IMAGE_ID}`, JSON.stringify(DEMO_LAYERS));
+
+    showSuccess(
+      "Sample workspace loaded",
+      "This demo uses a synthetic image and stores edits in this browser only.",
+    );
+  };
+
   // Eraser size state
   const [eraserSize, setEraserSize] = useState<number>(16);
 
@@ -180,11 +228,18 @@ export default function Layout({ children }: LayoutProps) {
               // Restore regular image
               setUseHiRes(false);
               setDziUrl(null);
-              setCurrentImage(
-                metadata.thumbnailUrl
-                  ? getApiUrl(metadata.thumbnailUrl)
-                  : getApiUrl(`/files/thumb/${lastId}`),
-              );
+              if (metadata.demo || lastId === DEMO_IMAGE_ID) {
+                setIsDemoMode(true);
+                setUseHiRes(false);
+                setDziUrl(null);
+                setCurrentImage(metadata.thumbnailUrl || DEMO_IMAGE_URL);
+              } else {
+                setCurrentImage(
+                  metadata.thumbnailUrl
+                    ? getApiUrl(metadata.thumbnailUrl)
+                    : getApiUrl(`/files/thumb/${lastId}`),
+                );
+              }
             }
           } catch {
             // Fallback if metadata parsing fails
@@ -224,6 +279,13 @@ export default function Layout({ children }: LayoutProps) {
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === DEMO_QUERY_VALUE && !currentImageId) {
+      loadDemoWorkspace();
+    }
+  }, [currentImageId]);
 
   useEffect(() => {
     if (!user) {
@@ -412,6 +474,7 @@ const handleAnnotationImport = async (file: File) => {
               setCurrentImageId(imageId);
               localStorage.setItem("lastImageId", imageId);
             }
+            setIsDemoMode(false);
             setAnnotations([]);
             setLayers([]); // Clear layers for new image
             setBaseImageLayerId(null);
@@ -518,6 +581,13 @@ const handleAnnotationImport = async (file: File) => {
       );
       return;
     }
+    if (isDemoImageId(id)) {
+      showError(
+        "Original download unavailable",
+        "The sample workspace uses a static synthetic image. Export the composite image or annotations instead.",
+      );
+      return;
+    }
     try {
       const url = getApiUrl(`/files/original/${id}`);
       const res = await fetch(url, { method: "GET" });
@@ -588,6 +658,14 @@ const handleAnnotationImport = async (file: File) => {
   };
 
   const handleAnnotationDelete = (annotationId: string) => {
+    const annotation = annotations.find((a) => a.id === annotationId);
+    const label = annotation?.name || annotation?.category || "this annotation";
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Delete ${label}? This can be undone with Undo.`)
+    ) {
+      return;
+    }
     setUndoStack((prevStack) => [...prevStack, cloneAnnotations(annotations)]);
     setRedoStack([]);
     setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
@@ -824,7 +902,8 @@ const handleAnnotationImport = async (file: File) => {
   });
 
   useEffect(() => {
-    if (!user) navigate("/");
+    const params = new URLSearchParams(window.location.search);
+    if (!user && params.get("demo") !== DEMO_QUERY_VALUE) navigate("/");
   }, [user, navigate]);
 
   if (children) {
@@ -860,6 +939,7 @@ const handleAnnotationImport = async (file: File) => {
           onImageImport={handleImageImport}
           onAnnotationImport={handleAnnotationImport}
           onImageExport={handleDownloadOriginal}
+          onLoadDemoSample={loadDemoWorkspace}
           onExportAnnotations={handleExportAnnotations}
           onExportMask={handleExportMask}
           onExportComposite={handleExportComposite}
@@ -923,8 +1003,15 @@ const handleAnnotationImport = async (file: File) => {
           eraserSize={eraserSize}
           setEraserSize={setEraserSize}
         />
-        <ImageViewer
-          imageUrl={currentImage}
+        <div className="flex-1 flex min-w-0 flex-col">
+          {isDemoMode && (
+            <div className="border-b border-border bg-amber-50 px-4 py-2 text-sm text-amber-950">
+              Sample demo: synthetic image, browser-local annotations, no patient
+              data, and no backend persistence.
+            </div>
+          )}
+          <ImageViewer
+            imageUrl={currentImage}
           onImageLoad={handleImageLoad}
           imageVisible={
             baseImageLayerId
@@ -977,8 +1064,9 @@ const handleAnnotationImport = async (file: File) => {
           shapeStrokeColor={shapeStrokeColor}
           shapeStrokeWidth={shapeStrokeWidth}
           // eraser
-          eraserSize={eraserSize}
-        />
+            eraserSize={eraserSize}
+          />
+        </div>
       </div>
 
       {/* Keyboard Shortcuts Help Dialog */}

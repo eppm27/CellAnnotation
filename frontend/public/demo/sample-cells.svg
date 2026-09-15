@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic microscopy-style cell sample</title>
+  <desc id="desc">A synthetic, non-clinical image created for the CellAnnotation portfolio demo.</desc>
+  <defs>
+    <radialGradient id="field" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#eef7fb"/>
+      <stop offset="65%" stop-color="#dfeef2"/>
+      <stop offset="100%" stop-color="#c9dce3"/>
+    </radialGradient>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="1.2"/>
+    </filter>
+  </defs>
+  <rect width="720" height="520" fill="url(#field)"/>
+  <g opacity="0.18" stroke="#7aa3b2" stroke-width="1">
+    <path d="M0 94 C140 60 262 128 418 90 C530 62 618 74 720 42" fill="none"/>
+    <path d="M0 420 C170 382 240 444 394 410 C520 382 606 410 720 372" fill="none"/>
+    <path d="M106 0 C122 134 94 250 128 520" fill="none"/>
+    <path d="M612 0 C588 152 628 308 594 520" fill="none"/>
+  </g>
+  <g filter="url(#soft)">
+    <ellipse cx="146" cy="151" rx="48" ry="34" fill="#d68ea1" opacity="0.66"/>
+    <ellipse cx="154" cy="146" rx="19" ry="13" fill="#804e8f" opacity="0.72"/>
+    <ellipse cx="274" cy="173" rx="68" ry="46" fill="#e7a0ac" opacity="0.72"/>
+    <ellipse cx="289" cy="174" rx="32" ry="23" fill="#6b4a94" opacity="0.75"/>
+    <ellipse cx="446" cy="126" rx="54" ry="38" fill="#d894a7" opacity="0.64"/>
+    <ellipse cx="438" cy="132" rx="20" ry="16" fill="#765697" opacity="0.7"/>
+    <ellipse cx="566" cy="180" rx="42" ry="58" fill="#e3a1b4" opacity="0.67"/>
+    <ellipse cx="570" cy="190" rx="17" ry="28" fill="#745096" opacity="0.72"/>
+    <ellipse cx="189" cy="379" rx="78" ry="49" fill="#dda0aa" opacity="0.68"/>
+    <ellipse cx="207" cy="379" rx="35" ry="21" fill="#6e4d90" opacity="0.76"/>
+    <ellipse cx="505" cy="317" rx="84" ry="62" fill="#e9a4af" opacity="0.76"/>
+    <ellipse cx="500" cy="316" rx="41" ry="31" fill="#684b92" opacity="0.78"/>
+    <ellipse cx="608" cy="402" rx="53" ry="37" fill="#d98fa6" opacity="0.64"/>
+    <ellipse cx="614" cy="398" rx="21" ry="15" fill="#765091" opacity="0.72"/>
+  </g>
+  <g opacity="0.46">
+    <circle cx="86" cy="282" r="8" fill="#8f5b98"/>
+    <circle cx="116" cy="302" r="5" fill="#a76c9d"/>
+    <circle cx="352" cy="86" r="6" fill="#8f5b98"/>
+    <circle cx="365" cy="106" r="4" fill="#a76c9d"/>
+    <circle cx="381" cy="454" r="7" fill="#8f5b98"/>
+    <circle cx="650" cy="260" r="5" fill="#a76c9d"/>
+  </g>
+  <text x="24" y="494" fill="#36505a" font-family="Arial, sans-serif" font-size="13">
+    Synthetic sample image for demo use. Not clinical, diagnostic, or patient data.
+  </text>
+</svg>

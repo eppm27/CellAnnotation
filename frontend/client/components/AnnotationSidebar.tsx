@@ -124,6 +124,7 @@ interface AnnotationSidebarProps {
   onAnnotationImport?: (file: File) => void;
   onMaskImport?: (file: File) => void;
   onImageExport: () => void;
+  onLoadDemoSample?: () => void;
   onExportOriginal?: () => void;
   onExportAnnotations?: () => void;
   onExportMask?: () => void;
@@ -418,6 +419,7 @@ export default function AnnotationSidebar({
   onImageImport,
   onMaskImport,
   onImageExport,
+  onLoadDemoSample,
   onAnnotationImport,
   onExportAnnotations,
   onExportMask,
@@ -919,6 +921,17 @@ export default function AnnotationSidebar({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {onLoadDemoSample && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="justify-start"
+                      onClick={onLoadDemoSample}
+                    >
+                      <FileImage className="w-4 h-4 mr-2" />
+                      Load Sample Demo
+                    </Button>
+                  )}
                   <input
                     ref={imageInputRef}
                     type="file"
