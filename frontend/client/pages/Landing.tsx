@@ -42,11 +42,16 @@ export default function Landing() {
             Quantitative, reproducible annotation for biomedical images
           </h2>
           <p className="text-muted-foreground">
-            Import whole-slide images (SVS) and standard images (PNG), draw cell
-            and region annotations, and export publication-ready figures with
-            precision controls.
+            View microscopy-style images, draw cell and region annotations, and
+            export annotated figures or JSON annotation data for review.
           </p>
           <div className="flex items-center justify-center gap-3">
+            <Button
+              size="lg"
+              onClick={() => navigate("/workspace?demo=sample")}
+            >
+              Try Sample Demo
+            </Button>
             <Button
               size="lg"
               variant="outline"

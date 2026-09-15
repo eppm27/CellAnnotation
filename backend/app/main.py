@@ -27,6 +27,9 @@ if Config.LOGS_DIR and not Config.LOGS_DIR.exists():
 if LOGGING_CONFIG.exists() and yaml is not None:
     with open(LOGGING_CONFIG, "r") as f:
         config = yaml.safe_load(f.read())
+        file_handler = config.get("handlers", {}).get("file")
+        if file_handler:
+            file_handler["filename"] = str(Config.LOGS_DIR / "app.log")
         logging.config.dictConfig(config)
 else:
     logging.basicConfig(level=logging.INFO)
